@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Social Media Outreach Assistant</title>
+    <style>
+      body {
+        width: 350px;
+        padding: 15px;
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      input,
+      textarea,
+      select {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .emoji-selector {
+        display: flex;
+        gap: 8px;
+        padding: 10px 0;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+      .emoji {
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 5px;
+        border-radius: 50%;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+      }
+      .emoji:hover {
+        transform: scale(1.2);
+        background-color: #f0f0f0;
+      }
+      .emoji.selected {
+        background: #e8f5e9;
+        box-shadow: 0 0 0 3px #4caf50;
+      }
+      button {
+        padding: 10px 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      #response {
+        min-height: 100px;
+        resize: vertical;
+      }
+      .label {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+      .tooltip:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1;
+      }
+      .settings-toggle {
+        color: #4caf50;
+        text-decoration: underline;
+        cursor: pointer;
+        font-size: 14px;
+        text-align: right;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 5px;
+      }
+      .settings-toggle .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .settings-toggle .status-dot.red {
+        background-color: #f44336;
+        animation: pulse 2s infinite;
+      }
+      .settings-toggle .status-dot.green {
+        background-color: #4caf50;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 0.7;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .settings-panel {
+        display: none;
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+      }
+      .settings-status {
+        background: #fff;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        border: 1px solid #e0e0e0;
+      }
+      .settings-status div {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin: 2px 0;
+      }
+      .api-key-status {
+        font-size: 12px;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .status-success {
+        color: #4caf50;
+      }
+      .status-error {
+        color: #f44336;
+      }
+      .status-warning {
+        color: #ff9800;
+      }
+      .api-key-input {
+        font-family: monospace;
+      }
+      .save-settings {
+        background-color: #2196f3;
+        opacity: 0.7;
+        pointer-events: none;
+      }
+      .save-settings.enabled {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .save-settings.enabled:hover {
+        background-color: #1976d2;
+      }
+      .response-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .current-model {
+        font-size: 12px;
+        color: #4caf50;
+        font-weight: normal;
+      }
+      .model-select option {
+        padding: 8px;
+        margin: 2px;
+      }
+      .model-select option[value$=':free'] {
+        color: #4caf50;
+      }
+      .model-select option:not([value$=':free']) {
+        color: #f57c00;
+      }
+      .model-select optgroup {
+        font-weight: bold;
+        color: #333;
+      }
+      .model-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 5px;
+      }
+      .free-badge {
+        background-color: #e8f5e9;
+        color: #4caf50;
+      }
+      .paid-badge {
+        background-color: #fff3e0;
+        color: #f57c00;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="settings-toggle">
+        <span class="status-dot red"></span>
+        ⚙️ Settings
+        <span id="quickModelStatus" class="current-model"></span>
+      </div>
+
+      <div class="settings-panel">
+        <div class="settings-status">
+          <div id="apiKeyStatus">
+            <span>API Key:</span>
+            <span class="status-error">❌ No API Key Saved</span>
+          </div>
+          <div id="modelStatus">
+            <span>Current Model:</span>
+            <span>Not Selected</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="label" for="apiKey">OpenRouter API Key:</label>
+          <input
+            type="password"
+            id="apiKey"
+            class="api-key-input"
+            placeholder="Enter your OpenRouter API key"
+          />
+          <div class="api-key-status" id="apiKeyStatusMessage">
+            <span class="status-error">❌ No API Key Saved</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="label" for="modelSelect">AI Model:</label>
+          <select id="modelSelect" class="model-select">
+            <optgroup label="Free Models">
+              <option value="cognitivecomputations/dolphin3.0-r1-mistral-24b:free">
+                Dolphin 3.0 Mistral 24B (Free)
+              </option>
+              <option value="google/gemini-2.0-flash-lite-preview-02-05:free">
+                Gemini 2.0 Flash Lite (Free)
+              </option>
+              <option value="google/gemini-2.0-pro-exp-02-05:free">Gemini 2.0 Pro (Free)</option>
+              <option value="deepseek/deepseek-r1-distill-llama-70b:free">
+                DeepSeek R1 Distill LLaMA 70B (Free)
+              </option>
+              <option value="google/gemini-2.0-flash-thinking-exp:free">
+                Gemini 2.0 Flash Thinking (Free)
+              </option>
+              <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+              <option value="deepseek/deepseek-chat:free">DeepSeek Chat (Free)</option>
+              <option value="meta-llama/llama-3.3-70b-instruct:free">
+                LLaMA 3.3 70B Instruct (Free)
+              </option>
+            </optgroup>
+            <optgroup label="Paid Models">
+              <option value="anthropic/claude-3.5-haiku-20241022">Claude 3.5 Haiku (Paid)</option>
+              <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Paid)</option>
+              <option value="openai/o3-mini">OpenAI O3 Mini (Paid)</option>
+              <option value="openai/o1-mini-2024-09-12">OpenAI O1 Mini (Paid)</option>
+              <option value="openai/gpt-4o-mini">GPT-4O Mini (Paid)</option>
+            </optgroup>
+          </select>
+        </div>
+        <button class="save-settings" id="saveSettings">Save Settings</button>
+      </div>
+
+      <div class="input-group">
+        <label class="label" for="socialLink">Social Media Link:</label>
+        <input type="text" id="socialLink" placeholder="Paste your social media link here" />
+      </div>
+
+      <div class="input-group">
+        <label class="label">Select Sentiment:</label>
+        <div class="emoji-selector">
+          <span class="emoji tooltip" data-sentiment="positive" data-tooltip="Positive">😊</span>
+          <span class="emoji tooltip" data-sentiment="neutral" data-tooltip="Neutral">😐</span>
+          <span class="emoji tooltip" data-sentiment="negative" data-tooltip="Negative">😕</span>
+          <span class="emoji tooltip" data-sentiment="excited" data-tooltip="Excited">🎉</span>
+          <span class="emoji tooltip" data-sentiment="professional" data-tooltip="Professional"
+            >👔</span
+          >
+          <span class="emoji tooltip" data-sentiment="question" data-tooltip="Ask a Question"
+            >🤔</span
+          >
+          <span class="emoji tooltip" data-sentiment="technical" data-tooltip="Technical Value"
+            >💡</span
+          >
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="response-header">
+          <label class="label" for="response">Generated Response:</label>
+          <span class="current-model" id="currentModel"></span>
+        </div>
+        <textarea
+          id="response"
+          readonly
+          placeholder="Your generated response will appear here..."
+        ></textarea>
+      </div>
+
+      <button id="generateBtn">Generate Response</button>
+      <button id="copyBtn">Copy Response</button>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
