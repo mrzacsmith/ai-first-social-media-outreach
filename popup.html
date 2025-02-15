@@ -100,17 +100,29 @@
         white-space: nowrap;
         z-index: 1;
       }
-      .settings-toggle {
-        color: #4caf50;
-        text-decoration: underline;
-        cursor: pointer;
-        font-size: 14px;
-        text-align: right;
-        margin-bottom: 10px;
+      .icon-container {
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 5px;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .settings-toggle {
+        color: #4caf50;
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 24px;
+      }
+      .stats-toggle {
+        cursor: pointer;
+        font-size: 16px;
+        color: #2196f3;
+        display: flex;
+        align-items: center;
+        height: 24px;
       }
       .settings-toggle .status-dot {
         width: 8px;
@@ -139,12 +151,57 @@
           opacity: 1;
         }
       }
+      .current-model {
+        font-size: 12px;
+        color: #4caf50;
+        font-weight: normal;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+      }
+      .stats-panel {
+        display: none;
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+      }
+      .stats-panel.visible {
+        display: block;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .stat-card {
+        background: white;
+        padding: 10px;
+        border-radius: 4px;
+        text-align: center;
+        border: 1px solid #e0e0e0;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2196f3;
+        margin: 5px 0;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+      }
       .settings-panel {
         display: none;
         background: #f5f5f5;
         padding: 15px;
         border-radius: 4px;
         margin-bottom: 15px;
+      }
+      .settings-panel.visible {
+        display: block;
       }
       .settings-status {
         background: #fff;
@@ -196,11 +253,6 @@
         align-items: center;
         gap: 10px;
       }
-      .current-model {
-        font-size: 12px;
-        color: #4caf50;
-        font-weight: normal;
-      }
       .model-select option {
         padding: 8px;
         margin: 2px;
@@ -233,10 +285,35 @@
   </head>
   <body>
     <div class="container">
-      <div class="settings-toggle">
-        <span class="status-dot red"></span>
-        ⚙️ Settings
-        <span id="quickModelStatus" class="current-model"></span>
+      <div class="icon-container">
+        <div class="settings-toggle">
+          <span class="status-dot red"></span>
+          ⚙️
+          <span id="quickModelStatus" class="current-model"></span>
+        </div>
+        <div class="stats-toggle" title="View Outreach Statistics">📊</div>
+      </div>
+
+      <div class="stats-panel">
+        <div class="label">Outreach Statistics</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="todayCount">0</div>
+            <div class="stat-label">Today's Outreach</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="weekCount">0</div>
+            <div class="stat-label">This Week</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="monthCount">0</div>
+            <div class="stat-label">This Month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalCount">0</div>
+            <div class="stat-label">Total Outreach</div>
+          </div>
+        </div>
       </div>
 
       <div class="settings-panel">

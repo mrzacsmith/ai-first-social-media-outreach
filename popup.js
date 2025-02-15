@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const modelStatus = document.getElementById('modelStatus')
   const statusDot = document.querySelector('.status-dot')
   const quickModelStatus = document.getElementById('quickModelStatus')
+  const statsToggle = document.querySelector('.stats-toggle')
+  const statsPanel = document.querySelector('.stats-panel')
+  const todayCount = document.getElementById('todayCount')
+  const weekCount = document.getElementById('weekCount')
+  const monthCount = document.getElementById('monthCount')
+  const totalCount = document.getElementById('totalCount')
 
   // Function to update current model display
   function updateCurrentModelDisplay(modelValue) {
@@ -132,9 +138,66 @@ document.addEventListener('DOMContentLoaded', function () {
   // Load saved settings
   loadSettings()
 
-  // Settings toggle
+  // Function to update statistics display
+  async function updateStatistics() {
+    try {
+      const storage = await chrome.storage.local.get('interactions')
+      const interactions = storage.interactions || {}
+
+      const today = new Date().toISOString().split('T')[0]
+      const todayInteractions = interactions[today] || 0
+
+      // Calculate week interactions
+      let weekTotal = 0
+      const currentDate = new Date()
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(currentDate)
+        date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split('T')[0]
+        weekTotal += interactions[dateStr] || 0
+      }
+
+      // Calculate month interactions
+      let monthTotal = 0
+      const currentMonth = currentDate.getMonth()
+      const currentYear = currentDate.getFullYear()
+      Object.entries(interactions).forEach(([date, count]) => {
+        const [year, month] = date.split('-').map(Number)
+        if (year === currentYear && month === currentMonth + 1) {
+          monthTotal += count
+        }
+      })
+
+      // Calculate total interactions
+      const totalInteractions = Object.values(interactions).reduce((sum, count) => sum + count, 0)
+
+      // Update display
+      todayCount.textContent = todayInteractions
+      weekCount.textContent = weekTotal
+      monthCount.textContent = monthTotal
+      totalCount.textContent = totalInteractions
+    } catch (error) {
+      console.error('Error updating statistics:', error)
+    }
+  }
+
+  // Stats toggle handler
+  statsToggle.addEventListener('click', () => {
+    settingsPanel.classList.remove('visible')
+    statsPanel.classList.toggle('visible')
+    if (statsPanel.classList.contains('visible')) {
+      updateStatistics()
+    }
+  })
+
+  // Settings toggle handler (modified)
   settingsToggle.addEventListener('click', () => {
+    statsPanel.classList.remove('visible')
     settingsPanel.classList.toggle('visible')
+    // Update model display when settings panel is opened
+    if (settingsPanel.classList.contains('visible')) {
+      updateCurrentModelDisplay(modelSelect.value)
+    }
   })
 
   // Update API key input handler
@@ -201,6 +264,78 @@ document.addEventListener('DOMContentLoaded', function () {
       selectedSentiment = this.getAttribute('data-sentiment')
     })
   })
+
+  // Update statistics when interactions are recorded
+  async function recordInteraction() {
+    try {
+      const date = new Date().toISOString().split('T')[0]
+      const storage = await chrome.storage.local.get('interactions')
+      const interactions = storage.interactions || {}
+
+      if (!interactions[date]) {
+        interactions[date] = 0
+      }
+      interactions[date]++
+
+      await chrome.storage.local.set({ interactions })
+
+      // Update statistics if panel is visible
+      if (statsPanel.classList.contains('visible')) {
+        updateStatistics()
+      }
+    } catch (error) {
+      console.error('Error recording interaction:', error)
+    }
+  }
+
+  // Function to generate response based on sentiment using OpenRouter API
+  async function generateResponse(link, sentiment, apiKey, model) {
+    try {
+      const prompt = `Generate a response to this social media post: ${link}
+      The response should be in a ${sentiment} tone.
+      Keep the response concise, professional, and engaging.
+      Include the appropriate emoji for the sentiment.
+      Make sure the response encourages further discussion.`
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://github.com/yourusername/social-media-extension',
+        },
+        body: JSON.stringify({
+          model: model || 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a helpful assistant that generates engaging social media responses.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('API request failed')
+      }
+
+      const data = await response.json()
+      const generatedResponse = data.choices[0].message.content.trim()
+
+      // Record the interaction
+      await recordInteraction()
+
+      return generatedResponse
+    } catch (error) {
+      console.error('Error calling OpenRouter API:', error)
+      throw error
+    }
+  }
 
   // Generate response button click handler
   generateBtn.addEventListener('click', async function () {
@@ -269,64 +404,3 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 1500)
   })
 })
-
-// Function to generate response based on sentiment using OpenRouter API
-async function generateResponse(link, sentiment, apiKey, model) {
-  try {
-    const prompt = `Generate a response to this social media post: ${link}
-    The response should be in a ${sentiment} tone.
-    Keep the response concise, professional, and engaging.
-    Include the appropriate emoji for the sentiment.
-    Make sure the response encourages further discussion.`
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://github.com/yourusername/social-media-extension',
-      },
-      body: JSON.stringify({
-        model: model || 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that generates engaging social media responses.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error('API request failed')
-    }
-
-    const data = await response.json()
-    const generatedResponse = data.choices[0].message.content.trim()
-
-    // Store this interaction in Chrome storage
-    try {
-      const date = new Date().toISOString().split('T')[0]
-      const storage = await chrome.storage.local.get('interactions')
-      const interactions = storage.interactions || {}
-
-      if (!interactions[date]) {
-        interactions[date] = 0
-      }
-      interactions[date]++
-
-      await chrome.storage.local.set({ interactions })
-    } catch (error) {
-      console.error('Error storing interaction:', error)
-    }
-
-    return generatedResponse
-  } catch (error) {
-    console.error('Error calling OpenRouter API:', error)
-    throw error
-  }
-}
