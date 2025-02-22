@@ -37,21 +37,13 @@
         width: 100%;
       }
       .emoji {
-        font-size: 24px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        padding: 5px;
-        border-radius: 50%;
-        user-select: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
+        font-size: 20px;
+        margin: 0 5px;
+        transition: transform 0.2s;
       }
       .emoji:hover {
         transform: scale(1.2);
-        background-color: #f0f0f0;
       }
       .emoji.selected {
         background: #e8f5e9;
@@ -252,6 +244,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        justify-content: space-between;
       }
       .model-select option {
         padding: 8px;
@@ -280,6 +273,62 @@
       .paid-badge {
         background-color: #fff3e0;
         color: #f57c00;
+      }
+      .format-selector {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border: 1px solid #e0e0e0;
+      }
+      .format-selector .label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 5px;
+      }
+      .format-options {
+        display: flex;
+        gap: 10px;
+      }
+      .format-option {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+      }
+      .format-option input[type='radio'] {
+        cursor: pointer;
+      }
+      .preview-toggle {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #2196f3;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .copy-icon {
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+      }
+      .copy-icon:hover {
+        background-color: #f0f0f0;
+      }
+      .copy-icon.copied {
+        animation: copied 1.5s ease;
+      }
+      @keyframes copied {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
       }
     </style>
   </head>
@@ -383,19 +432,35 @@
       <div class="input-group">
         <label class="label">Select Sentiment:</label>
         <div class="emoji-selector">
-          <span class="emoji tooltip" data-sentiment="positive" data-tooltip="Positive">😊</span>
+          <span class="emoji tooltip" data-sentiment="positive" data-tooltip="Positive & Friendly"
+            >😊</span
+          >
           <span class="emoji tooltip" data-sentiment="neutral" data-tooltip="Neutral">😐</span>
-          <span class="emoji tooltip" data-sentiment="negative" data-tooltip="Negative">😕</span>
-          <span class="emoji tooltip" data-sentiment="excited" data-tooltip="Excited">🎉</span>
           <span class="emoji tooltip" data-sentiment="professional" data-tooltip="Professional"
             >👔</span
           >
+          <span class="emoji tooltip" data-sentiment="technical" data-tooltip="Technical">💻</span>
+          <span class="emoji tooltip" data-sentiment="excited" data-tooltip="Excited">🎉</span>
           <span class="emoji tooltip" data-sentiment="question" data-tooltip="Ask a Question"
-            >🤔</span
+            >❓</span
           >
-          <span class="emoji tooltip" data-sentiment="technical" data-tooltip="Technical Value"
-            >💡</span
-          >
+        </div>
+      </div>
+
+      <div class="format-selector">
+        <div class="format-options">
+          <label class="format-option">
+            <input type="radio" name="format" value="plain" checked />
+            <span>Plain</span>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="format" value="markdown" />
+            <span>Markdown</span>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="format" value="html" />
+            <span>HTML</span>
+          </label>
         </div>
       </div>
 
@@ -403,6 +468,7 @@
         <div class="response-header">
           <label class="label" for="response">Generated Response:</label>
           <span class="current-model" id="currentModel"></span>
+          <span class="copy-icon tooltip" id="copyIcon" data-tooltip="Copy to Clipboard">📋</span>
         </div>
         <textarea
           id="response"
@@ -412,7 +478,6 @@
       </div>
 
       <button id="generateBtn">Generate Response</button>
-      <button id="copyBtn">Copy Response</button>
     </div>
     <script src="popup.js"></script>
   </body>

@@ -24,6 +24,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const weekCount = document.getElementById('weekCount')
   const monthCount = document.getElementById('monthCount')
   const totalCount = document.getElementById('totalCount')
+  const formatOptions = document.querySelectorAll('input[name="format"]')
+  const previewToggle = document.querySelector('.preview-toggle')
+  const copyIcon = document.getElementById('copyIcon')
+  let selectedFormat = 'plain'
 
   // Function to update current model display
   function updateCurrentModelDisplay(modelValue) {
@@ -288,11 +292,61 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Function to generate response based on sentiment using OpenRouter API
+  // Function to get format-specific prompt instructions
+  function getFormatInstructions(format) {
+    switch (format) {
+      case 'markdown':
+        return `Format the response using Markdown:
+        - Use ** for bold text
+        - Use * for italic text
+        - Use bullet points where appropriate
+        - Use headers for sections if needed
+        - Include line breaks for readability`
+      case 'html':
+        return `Format the response using HTML:
+        - Use appropriate HTML tags (<p>, <strong>, <em>, etc.)
+        - Ensure proper tag closure
+        - Use <br> for line breaks
+        - Keep the HTML structure clean and semantic`
+      default:
+        return 'Format the response as plain text, using only line breaks for structure.'
+    }
+  }
+
+  // Function to preview formatted text
+  function previewFormat(text, format) {
+    if (!previewToggle.classList.contains('active')) {
+      return text // Return raw text when preview is not active
+    }
+
+    switch (format) {
+      case 'markdown':
+        // Convert markdown to rendered text
+        return text
+          .replace(/\*\*(.*?)\*\*/g, '$1') // Bold
+          .replace(/\*(.*?)\*/g, '$1') // Italic
+          .replace(/^- (.*)/gm, '• $1') // Bullet points
+          .replace(/^### (.*)/gm, '$1') // H3
+          .replace(/^## (.*)/gm, '$1') // H2
+          .replace(/^# (.*)/gm, '$1') // H1
+      case 'html':
+        // Strip HTML tags but preserve line breaks
+        return text
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<[^>]*>/g, '')
+      default:
+        return text
+    }
+  }
+
+  // Update generateResponse function to include format
   async function generateResponse(link, sentiment, apiKey, model) {
     try {
+      const formatInstructions = getFormatInstructions(selectedFormat)
       const prompt = `Generate a response to this social media post: ${link}
       The response should be in a ${sentiment} tone.
+      ${formatInstructions}
       Keep the response concise, professional, and engaging.
       Include the appropriate emoji for the sentiment.
       Make sure the response encourages further discussion.`
@@ -325,7 +379,12 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const data = await response.json()
-      const generatedResponse = data.choices[0].message.content.trim()
+      let generatedResponse = data.choices[0].message.content.trim()
+
+      // Preview format if enabled
+      if (previewToggle.classList.contains('active')) {
+        generatedResponse = previewFormat(generatedResponse, selectedFormat)
+      }
 
       // Record the interaction
       await recordInteraction()
@@ -386,21 +445,36 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   })
 
-  // Copy button click handler
-  copyBtn.addEventListener('click', function () {
+  // Copy icon click handler
+  copyIcon.addEventListener('click', function () {
     if (!responseTextarea.value) {
-      alert('No response to copy')
       return
     }
 
     responseTextarea.select()
     document.execCommand('copy')
 
-    // Show feedback
-    const originalText = copyBtn.textContent
-    copyBtn.textContent = 'Copied!'
+    // Show animation feedback
+    this.classList.add('copied')
     setTimeout(() => {
-      copyBtn.textContent = originalText
+      this.classList.remove('copied')
     }, 1500)
+  })
+
+  // Format selection handler
+  formatOptions.forEach((option) => {
+    option.addEventListener('change', (e) => {
+      selectedFormat = e.target.value
+      // Save format preference
+      chrome.storage.local.set({ selectedFormat })
+    })
+  })
+
+  // Load saved format preference
+  chrome.storage.local.get(['selectedFormat'], (result) => {
+    if (result.selectedFormat) {
+      selectedFormat = result.selectedFormat
+      document.querySelector(`input[name="format"][value="${selectedFormat}"]`).checked = true
+    }
   })
 })
