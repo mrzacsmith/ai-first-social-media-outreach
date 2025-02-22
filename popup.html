@@ -330,6 +330,71 @@
           transform: scale(1.2);
         }
       }
+      .goal-selector {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      .goal-value {
+        font-size: 16px;
+        font-weight: bold;
+        color: #2196f3;
+        min-width: 40px;
+      }
+      input[type='range'] {
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: #e0e0e0;
+        outline: none;
+        -webkit-appearance: none;
+      }
+      input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #2196f3;
+        cursor: pointer;
+        transition: background 0.3s ease-in-out;
+      }
+      input[type='range']::-webkit-slider-thumb:hover {
+        background: #1976d2;
+      }
+      .goal-reached {
+        background: #e8f5e9 !important;
+        border-color: #4caf50 !important;
+        animation: pulse 2s infinite;
+      }
+      .goal-reached .stat-value {
+        color: #4caf50;
+      }
+      @keyframes confetti {
+        0% {
+          transform: translateY(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      .confetti-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+      }
+      .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #4caf50;
+        opacity: 0;
+      }
     </style>
   </head>
   <body>
@@ -363,6 +428,13 @@
             <div class="stat-label">Total Outreach</div>
           </div>
         </div>
+        <button
+          id="exportCsvBtn"
+          class="export-btn"
+          style="margin-top: 15px; background-color: #2196f3"
+        >
+          📊 Export as CSV
+        </button>
       </div>
 
       <div class="settings-panel">
@@ -420,6 +492,13 @@
               <option value="openai/gpt-4o-mini">GPT-4O Mini (Paid)</option>
             </optgroup>
           </select>
+        </div>
+        <div class="input-group">
+          <label class="label" for="dailyGoal">Daily Outreach Goal:</label>
+          <div class="goal-selector">
+            <input type="range" id="dailyGoal" min="10" max="100" step="10" value="10" />
+            <span id="goalValue" class="goal-value">10</span>
+          </div>
         </div>
         <button class="save-settings" id="saveSettings">Save Settings</button>
       </div>

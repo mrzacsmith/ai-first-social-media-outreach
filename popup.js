@@ -27,7 +27,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const formatOptions = document.querySelectorAll('input[name="format"]')
   const previewToggle = document.querySelector('.preview-toggle')
   const copyIcon = document.getElementById('copyIcon')
+  const dailyGoal = document.getElementById('dailyGoal')
+  const goalValue = document.getElementById('goalValue')
   let selectedFormat = 'plain'
+  let lastGoalReached = false
 
   // Function to update current model display
   function updateCurrentModelDisplay(modelValue) {
@@ -102,16 +105,74 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // Function to create confetti effect
+  function createConfetti() {
+    const confettiContainer = document.createElement('div')
+    confettiContainer.className = 'confetti-container'
+    document.body.appendChild(confettiContainer)
+
+    const colors = ['#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0']
+    const confettiCount = 50
+
+    for (let i = 0; i < confettiCount; i++) {
+      const confetti = document.createElement('div')
+      confetti.className = 'confetti'
+      confetti.style.left = Math.random() * 100 + '%'
+      confetti.style.animationDuration = Math.random() * 2 + 1 + 's'
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+      confetti.style.transform = `rotate(${Math.random() * 360}deg)`
+      confettiContainer.appendChild(confetti)
+
+      // Start animation
+      setTimeout(() => {
+        confetti.style.animation = 'confetti 2s ease-out forwards'
+      }, Math.random() * 1000)
+    }
+
+    // Remove container after animation
+    setTimeout(() => {
+      document.body.removeChild(confettiContainer)
+    }, 3000)
+  }
+
+  // Function to check if daily goal is reached
+  function checkGoalReached(todayInteractions) {
+    const currentGoal = parseInt(dailyGoal.value)
+    const wasReached = lastGoalReached
+    lastGoalReached = todayInteractions >= currentGoal
+
+    const todayCountCard = document.querySelector('.stat-card:first-child')
+
+    // If goal was just reached (wasn't reached before but is now)
+    if (lastGoalReached && !wasReached) {
+      createConfetti()
+      todayCountCard.classList.add('goal-reached')
+    } else if (!lastGoalReached) {
+      todayCountCard.classList.remove('goal-reached')
+    }
+  }
+
+  // Function to update goal value display
+  dailyGoal.addEventListener('input', function () {
+    goalValue.textContent = this.value
+  })
+
   // Function to load settings
   async function loadSettings() {
     try {
       const [syncData, localData] = await Promise.all([
         chrome.storage.sync.get(['apiKey']),
-        chrome.storage.local.get(['selectedModel']),
+        chrome.storage.local.get(['selectedModel', 'dailyGoal']),
       ])
 
       const defaultModel = 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free'
       const selectedModel = localData.selectedModel || defaultModel
+
+      // Set daily goal
+      if (localData.dailyGoal) {
+        dailyGoal.value = localData.dailyGoal
+        goalValue.textContent = localData.dailyGoal
+      }
 
       modelSelect.value = selectedModel
       if (!localData.selectedModel) {
@@ -180,8 +241,52 @@ document.addEventListener('DOMContentLoaded', function () {
       weekCount.textContent = weekTotal
       monthCount.textContent = monthTotal
       totalCount.textContent = totalInteractions
+
+      // Check if goal is reached
+      checkGoalReached(todayInteractions)
     } catch (error) {
       console.error('Error updating statistics:', error)
+    }
+  }
+
+  // Function to export interactions data as CSV
+  async function exportToCsv() {
+    try {
+      const storage = await chrome.storage.local.get('interactions')
+      const interactions = storage.interactions || {}
+
+      // Convert interactions data to array of objects
+      const data = Object.entries(interactions)
+        .map(([date, count]) => ({
+          date,
+          count,
+        }))
+        .sort((a, b) => b.date.localeCompare(a.date)) // Sort by date descending
+
+      // Create CSV content
+      const csvContent = [
+        'Date,Interactions', // CSV header
+        ...data.map((row) => `${row.date},${row.count}`), // CSV rows
+      ].join('\n')
+
+      // Create blob and download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+
+      link.setAttribute('href', url)
+      link.setAttribute(
+        'download',
+        `social_media_outreach_stats_${new Date().toISOString().split('T')[0]}.csv`
+      )
+      link.style.visibility = 'hidden'
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error('Error exporting CSV:', error)
+      alert('Failed to export data. Please try again.')
     }
   }
 
@@ -193,6 +298,9 @@ document.addEventListener('DOMContentLoaded', function () {
       updateStatistics()
     }
   })
+
+  // Export CSV button handler
+  document.getElementById('exportCsvBtn').addEventListener('click', exportToCsv)
 
   // Settings toggle handler (modified)
   settingsToggle.addEventListener('click', () => {
@@ -219,6 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
   saveSettingsBtn.addEventListener('click', async () => {
     const apiKey = apiKeyInput.value.trim()
     const selectedModel = modelSelect.value
+    const dailyGoalValue = parseInt(dailyGoal.value)
 
     if (!apiKey || apiKey === '••••••••') {
       alert('Please enter your OpenRouter API key')
@@ -238,8 +347,13 @@ document.addEventListener('DOMContentLoaded', function () {
         throw new Error('Invalid API key')
       }
 
-      await chrome.storage.sync.set({ apiKey })
-      await chrome.storage.local.set({ selectedModel })
+      await Promise.all([
+        chrome.storage.sync.set({ apiKey }),
+        chrome.storage.local.set({
+          selectedModel,
+          dailyGoal: dailyGoalValue,
+        }),
+      ])
 
       updateStatusIndicators(true, selectedModel)
       settingsPanel.classList.remove('visible')
@@ -269,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
     })
   })
 
-  // Update statistics when interactions are recorded
+  // Update recordInteraction function
   async function recordInteraction() {
     try {
       const date = new Date().toISOString().split('T')[0]
@@ -283,10 +397,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
       await chrome.storage.local.set({ interactions })
 
-      // Update statistics if panel is visible
-      if (statsPanel.classList.contains('visible')) {
-        updateStatistics()
-      }
+      // Update statistics after recording interaction
+      await updateStatistics()
     } catch (error) {
       console.error('Error recording interaction:', error)
     }
@@ -340,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Update generateResponse function to include format
+  // Update generateResponse function to be simpler and focused
   async function generateResponse(link, sentiment, apiKey, model) {
     try {
       const formatInstructions = getFormatInstructions(selectedFormat)
@@ -375,23 +487,37 @@ document.addEventListener('DOMContentLoaded', function () {
       })
 
       if (!response.ok) {
-        throw new Error('API request failed')
+        throw new Error(`API request failed with status ${response.status}`)
       }
 
       const data = await response.json()
-      let generatedResponse = data.choices[0].message.content.trim()
 
-      // Preview format if enabled
-      if (previewToggle.classList.contains('active')) {
-        generatedResponse = previewFormat(generatedResponse, selectedFormat)
+      // Validate response structure
+      if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+        throw new Error('Invalid API response format')
       }
 
-      // Record the interaction
-      await recordInteraction()
+      const choice = data.choices[0]
+      if (!choice || !choice.message || typeof choice.message.content !== 'string') {
+        throw new Error('Invalid response content format')
+      }
+
+      let generatedResponse = choice.message.content.trim()
+
+      // Preview format if enabled
+      if (previewToggle?.classList.contains('active')) {
+        generatedResponse = previewFormat(generatedResponse, selectedFormat)
+      }
 
       return generatedResponse
     } catch (error) {
       console.error('Error calling OpenRouter API:', error)
+      if (
+        error.message.includes('API response format') ||
+        error.message.includes('content format')
+      ) {
+        throw new Error('The AI service returned an unexpected response. Please try again.')
+      }
       throw error
     }
   }
@@ -436,6 +562,9 @@ document.addEventListener('DOMContentLoaded', function () {
         localData.selectedModel
       )
       responseTextarea.value = response
+
+      // Record interaction after successful response
+      await recordInteraction()
     } catch (error) {
       responseTextarea.value = 'Error generating response. Please try again.'
       console.error('Error:', error)
