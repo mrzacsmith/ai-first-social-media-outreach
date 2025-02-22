@@ -31,6 +31,23 @@ document.addEventListener('DOMContentLoaded', function () {
   const goalValue = document.getElementById('goalValue')
   let selectedFormat = 'plain'
   let lastGoalReached = false
+  let selectedLength = 'standard'
+
+  // Platform-specific character limits
+  const PLATFORM_LIMITS = {
+    'twitter.com': { limit: 280, name: 'Twitter/X', icon: 'icons/twitter.png' },
+    'x.com': { limit: 280, name: 'Twitter/X', icon: 'icons/twitter.png' },
+    'linkedin.com': { limit: 3000, name: 'LinkedIn', icon: 'icons/linkedin.png' },
+    'instagram.com': { limit: 2200, name: 'Instagram', icon: 'icons/instagram.png' },
+    'facebook.com': { limit: 63206, name: 'Facebook', icon: 'icons/facebook.png' },
+  }
+
+  // Response length configurations
+  const LENGTH_CONFIGS = {
+    brief: { min: 150, max: 225, sentences: '2-3' },
+    standard: { min: 225, max: 300, sentences: '3-4' },
+    detailed: { min: 300, max: 375, sentences: '4-5' },
+  }
 
   // Function to update current model display
   function updateCurrentModelDisplay(modelValue) {
@@ -452,17 +469,108 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Update generateResponse function to be simpler and focused
+  // Function to detect platform from URL
+  function detectPlatform(url) {
+    try {
+      const urlObj = new URL(url)
+      const domain = urlObj.hostname.toLowerCase()
+      for (const [platform, config] of Object.entries(PLATFORM_LIMITS)) {
+        if (domain.includes(platform)) {
+          return config
+        }
+      }
+      return null
+    } catch (e) {
+      return null
+    }
+  }
+
+  // Function to update character count UI
+  function updateCharacterCount(text = '') {
+    const charCount = text.length
+    const currentCountEl = document.getElementById('currentCount')
+    const maxCountEl = document.getElementById('maxCount')
+    const progressBar = document.getElementById('progressBar')
+    const characterCountDiv = document.querySelector('.character-count')
+
+    const platform = detectPlatform(socialLinkInput.value)
+    const maxLength = platform ? platform.limit : LENGTH_CONFIGS[selectedLength].max
+
+    currentCountEl.textContent = charCount
+    maxCountEl.textContent = maxLength
+
+    const percentage = (charCount / maxLength) * 100
+    progressBar.style.width = `${Math.min(percentage, 100)}%`
+
+    // Update UI based on character count
+    characterCountDiv.classList.remove('warning', 'error')
+    progressBar.classList.remove('warning', 'error')
+
+    if (percentage >= 90) {
+      characterCountDiv.classList.add('error')
+      progressBar.classList.add('error')
+    } else if (percentage >= 75) {
+      characterCountDiv.classList.add('warning')
+      progressBar.classList.add('warning')
+    }
+  }
+
+  // Function to update platform info
+  function updatePlatformInfo(url) {
+    const platformInfo = detectPlatform(url)
+    const platformIcon = document.getElementById('platformIcon')
+    const platformName = document.getElementById('platformName')
+
+    if (platformInfo) {
+      platformIcon.src = platformInfo.icon
+      platformIcon.alt = platformInfo.name
+      platformName.textContent = platformInfo.name
+      document.querySelector('.platform-info').style.display = 'flex'
+    } else {
+      document.querySelector('.platform-info').style.display = 'none'
+    }
+
+    updateCharacterCount(responseTextarea.value)
+  }
+
+  // Event listeners for length selector
+  document.querySelectorAll('.length-option').forEach((option) => {
+    option.addEventListener('click', function () {
+      document.querySelectorAll('.length-option').forEach((opt) => opt.classList.remove('selected'))
+      this.classList.add('selected')
+      selectedLength = this.dataset.length
+      updateCharacterCount(responseTextarea.value)
+    })
+  })
+
+  // Add event listeners for URL and response changes
+  socialLinkInput.addEventListener('input', function () {
+    updatePlatformInfo(this.value)
+  })
+
+  responseTextarea.addEventListener('input', function () {
+    updateCharacterCount(this.value)
+  })
+
+  // Update generateResponse function to include length parameters
   async function generateResponse(link, sentiment, apiKey, model) {
     try {
-      const formatInstructions = getFormatInstructions(selectedFormat)
-      const prompt = `Generate a response to this social media post: ${link}
-      The response should be in a ${sentiment} tone.
-      ${formatInstructions}
-      Keep the response concise, professional, and engaging.
-      Include the appropriate emoji for the sentiment.
-      Make sure the response encourages further discussion.`
+      const platform = detectPlatform(link)
+      const lengthConfig = LENGTH_CONFIGS[selectedLength]
+      const maxLength = platform ? platform.limit : lengthConfig.max
 
+      // Add length parameters to the prompt
+      const prompt = `Generate a ${selectedLength} response (${
+        lengthConfig.sentences
+      } sentences, between ${lengthConfig.min}-${lengthConfig.max} characters) for this ${
+        platform ? platform.name : 'social media'
+      } post. Use a ${sentiment} tone.${
+        platform
+          ? ` Ensure the response is under ${maxLength} characters to meet ${platform.name}'s limit.`
+          : ''
+      }`
+
+      const formatInstructions = getFormatInstructions(selectedFormat)
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -511,13 +619,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       return generatedResponse
     } catch (error) {
-      console.error('Error calling OpenRouter API:', error)
-      if (
-        error.message.includes('API response format') ||
-        error.message.includes('content format')
-      ) {
-        throw new Error('The AI service returned an unexpected response. Please try again.')
-      }
+      console.error('Error generating response:', error)
       throw error
     }
   }

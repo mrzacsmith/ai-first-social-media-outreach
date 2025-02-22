@@ -395,6 +395,68 @@
         background: #4caf50;
         opacity: 0;
       }
+      .length-selector {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
+      .length-option {
+        flex: 1;
+        text-align: center;
+        padding: 8px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .length-option.selected {
+        background: #e8f5e9;
+        border-color: #4caf50;
+        color: #2e7d32;
+      }
+      .length-option:hover {
+        border-color: #4caf50;
+      }
+      .character-count {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+      .character-count.warning {
+        color: #ff9800;
+      }
+      .character-count.error {
+        color: #f44336;
+      }
+      .platform-icon {
+        width: 16px;
+        height: 16px;
+        margin-right: 5px;
+      }
+      .progress-bar {
+        height: 4px;
+        background: #eee;
+        border-radius: 2px;
+        margin-top: 5px;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        background: #4caf50;
+        transition: width 0.3s ease;
+      }
+      .progress-bar-fill.warning {
+        background: #ff9800;
+      }
+      .progress-bar-fill.error {
+        background: #f44336;
+      }
     </style>
   </head>
   <body>
@@ -524,6 +586,32 @@
             >❓</span
           >
         </div>
+      </div>
+
+      <div class="length-selector">
+        <div class="length-option" data-length="brief">
+          <div>Brief</div>
+          <small>2-3 sentences</small>
+        </div>
+        <div class="length-option selected" data-length="standard">
+          <div>Standard</div>
+          <small>3-4 sentences</small>
+        </div>
+        <div class="length-option" data-length="detailed">
+          <div>Detailed</div>
+          <small>4-5 sentences</small>
+        </div>
+      </div>
+
+      <div class="character-count">
+        <span class="platform-info">
+          <img src="" alt="" class="platform-icon" id="platformIcon" />
+          <span id="platformName"></span>
+        </span>
+        <span>Characters: <span id="currentCount">0</span> / <span id="maxCount">280</span></span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-bar-fill" id="progressBar"></div>
       </div>
 
       <div class="format-selector">

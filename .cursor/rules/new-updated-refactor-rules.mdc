@@ -1,0 +1,31 @@
+---
+description: For all new, updated, and refactored code use this rule.
+globs: 
+---
+# Description: Enforce coding standards and best practices for HTML, CSS, and JavaScript files.
+
+## HTML Guidelines
+- Use semantic HTML5 elements (e.g., `<header>`, `<article>`, `<footer>`).
+- Ensure all `<img>` tags have descriptive `alt` attributes.
+- Validate HTML to ensure it adheres to W3C standards.
+
+## CSS Guidelines
+- Utilize Flexbox or CSS Grid for layout designs.
+- Use BEM (Block Element Modifier) naming convention for class names.
+- Avoid inline styles; prefer external CSS files for styling.
+- Ensure responsive design principles are followed for various screen sizes.
+
+## JavaScript Guidelines
+- Write ES6+ syntax, including `let` and `const` for variable declarations.
+- Prefer arrow functions for anonymous function expressions.
+- Use template literals (`\``) for string concatenation.
+- Implement modules to organize code into reusable components.
+- Include JSDoc comments for functions and classes to enhance readability.
+
+## General Best Practices
+- Maintain consistent indentation (e.g., 2 spaces per level).
+- Keep line length under 80 characters for better readability.
+- Regularly run linters (e.g., ESLint for JavaScript, stylelint for CSS) to enforce code quality.
+- Ensure cross-browser compatibility for all features.
+- Optimize assets (images, fonts) to improve page load performance.
+
