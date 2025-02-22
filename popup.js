@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const dailyGoal = document.getElementById('dailyGoal')
   const goalValue = document.getElementById('goalValue')
   const charCount = document.getElementById('charCount')
+  const clearInputs = document.getElementById('clearInputs')
   let selectedFormat = 'plain'
   let lastGoalReached = false
   let selectedLength = 'standard'
@@ -726,4 +727,17 @@ ${formatInstruction}`
       document.querySelector(`input[name="format"][value="${selectedFormat}"]`).checked = true
     }
   })
+
+  // Function to clear inputs
+  function clearAllInputs() {
+    socialLinkInput.value = ''
+    responseTextarea.value = ''
+    updateCharCount('')
+    // Reset any selected emoji
+    emojiElements.forEach((emoji) => emoji.classList.remove('selected'))
+    selectedSentiment = ''
+  }
+
+  // Clear inputs button handler
+  clearInputs.addEventListener('click', clearAllInputs)
 })

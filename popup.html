@@ -18,6 +18,12 @@
         display: flex;
         flex-direction: column;
         gap: 3px;
+        position: relative;
+      }
+      .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
       }
       input,
       textarea,
@@ -458,6 +464,18 @@
       .progress-bar-fill.error {
         display: none;
       }
+      .clear-icon {
+        position: absolute;
+        right: 8px;
+        color: #666;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 16px;
+        transition: color 0.2s;
+      }
+      .clear-icon:hover {
+        color: #f44336;
+      }
     </style>
   </head>
   <body>
@@ -568,7 +586,10 @@
 
       <div class="input-group">
         <label class="label" for="socialLink">Social Media Link:</label>
-        <input type="text" id="socialLink" placeholder="Paste your social media link here" />
+        <div class="input-wrapper">
+          <input type="text" id="socialLink" placeholder="Paste your social media link here" />
+          <span class="clear-icon tooltip" id="clearInputs" data-tooltip="Clear inputs">❌</span>
+        </div>
       </div>
 
       <div class="input-group">
