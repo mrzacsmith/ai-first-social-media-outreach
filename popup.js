@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const copyIcon = document.getElementById('copyIcon')
   const dailyGoal = document.getElementById('dailyGoal')
   const goalValue = document.getElementById('goalValue')
+  const charCount = document.getElementById('charCount')
   let selectedFormat = 'plain'
   let lastGoalReached = false
   let selectedLength = 'standard'
@@ -425,20 +426,11 @@ document.addEventListener('DOMContentLoaded', function () {
   function getFormatInstructions(format) {
     switch (format) {
       case 'markdown':
-        return `Format the response using Markdown:
-        - Use ** for bold text
-        - Use * for italic text
-        - Use bullet points where appropriate
-        - Use headers for sections if needed
-        - Include line breaks for readability`
+        return 'Format the response in Markdown. Use ** for bold and * for italic when emphasizing key points.'
       case 'html':
-        return `Format the response using HTML:
-        - Use appropriate HTML tags (<p>, <strong>, <em>, etc.)
-        - Ensure proper tag closure
-        - Use <br> for line breaks
-        - Keep the HTML structure clean and semantic`
+        return 'Format the response in HTML. Use appropriate tags like <p>, <strong>, and <em> for structure and emphasis.'
       default:
-        return 'Format the response as plain text, using only line breaks for structure.'
+        return 'Provide the response as plain text only.'
     }
   }
 
@@ -552,25 +544,44 @@ document.addEventListener('DOMContentLoaded', function () {
     updateCharacterCount(this.value)
   })
 
-  // Update generateResponse function to include length parameters
+  // Function to update character count
+  function updateCharCount(text = '') {
+    const count = text.length
+    charCount.textContent = `${count} chars`
+  }
+
+  // Add event listener for response changes
+  responseTextarea.addEventListener('input', function () {
+    updateCharCount(this.value)
+  })
+
+  // Update generateResponse function to include character count update
   async function generateResponse(link, sentiment, apiKey, model) {
     try {
       const platform = detectPlatform(link)
       const lengthConfig = LENGTH_CONFIGS[selectedLength]
       const maxLength = platform ? platform.limit : lengthConfig.max
+      const formatInstruction = getFormatInstructions(selectedFormat)
 
-      // Add length parameters to the prompt
-      const prompt = `Generate a ${selectedLength} response (${
-        lengthConfig.sentences
-      } sentences, between ${lengthConfig.min}-${lengthConfig.max} characters) for this ${
+      // Create a focused system message
+      const systemMessage = `You are a social media response generator. Follow these rules strictly:
+1. Generate exactly ONE response
+2. Include appropriate emojis naturally in the response
+3. Never show multiple options or variations
+4. Never include explanations or metadata
+5. Stay within the specified character and sentence limits
+6. Use the specified format (${selectedFormat}) only when explicitly selected
+7. Never include formatting instructions or options in the response`
+
+      // Create a focused user prompt
+      const prompt = `Generate a ${sentiment} response for this ${
         platform ? platform.name : 'social media'
-      } post. Use a ${sentiment} tone.${
-        platform
-          ? ` Ensure the response is under ${maxLength} characters to meet ${platform.name}'s limit.`
-          : ''
-      }`
+      } post.
+Length: ${lengthConfig.sentences} sentences (${lengthConfig.min}-${lengthConfig.max} characters)${
+        platform ? `\nPlatform limit: ${maxLength} characters` : ''
+      }
+${formatInstruction}`
 
-      const formatInstructions = getFormatInstructions(selectedFormat)
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -583,8 +594,7 @@ document.addEventListener('DOMContentLoaded', function () {
           messages: [
             {
               role: 'system',
-              content:
-                'You are a helpful assistant that generates engaging social media responses.',
+              content: systemMessage,
             },
             {
               role: 'user',
@@ -612,10 +622,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
       let generatedResponse = choice.message.content.trim()
 
-      // Preview format if enabled
-      if (previewToggle?.classList.contains('active')) {
-        generatedResponse = previewFormat(generatedResponse, selectedFormat)
-      }
+      // Remove any potential formatting instructions or options that might have slipped through
+      generatedResponse = generatedResponse.replace(
+        /^(Options?|Variations?|Version|Alternative)s?:?\s*\d*:?\s*\n?/gim,
+        ''
+      )
+      generatedResponse = generatedResponse.replace(
+        /^(Here'?s?|This is|I'?ve generated|I suggest|Try this|You could use):?\s*/gim,
+        ''
+      )
+
+      // Update character count
+      updateCharCount(generatedResponse)
 
       return generatedResponse
     } catch (error) {

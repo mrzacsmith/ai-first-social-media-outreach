@@ -12,12 +12,12 @@
       .container {
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        gap: 10px;
       }
       .input-group {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 3px;
       }
       input,
       textarea,
@@ -31,7 +31,7 @@
       .emoji-selector {
         display: flex;
         gap: 8px;
-        padding: 10px 0;
+        padding: 5px 0;
         justify-content: space-between;
         align-items: center;
         width: 100%;
@@ -67,7 +67,7 @@
         cursor: not-allowed;
       }
       #response {
-        min-height: 100px;
+        min-height: 120px;
         resize: vertical;
       }
       .label {
@@ -243,7 +243,7 @@
       .response-header {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         justify-content: space-between;
       }
       .model-select option {
@@ -398,19 +398,21 @@
       .length-selector {
         display: flex;
         gap: 10px;
-        margin: 10px 0;
-        padding: 10px;
+        margin: 5px 0;
+        padding: 8px;
         background: #f5f5f5;
         border-radius: 4px;
       }
       .length-option {
         flex: 1;
         text-align: center;
-        padding: 8px;
+        padding: 8px 16px;
         border: 2px solid #ddd;
         border-radius: 4px;
         cursor: pointer;
         transition: all 0.2s;
+        font-weight: bold;
+        position: relative;
       }
       .length-option.selected {
         background: #e8f5e9;
@@ -420,42 +422,41 @@
       .length-option:hover {
         border-color: #4caf50;
       }
-      .character-count {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+      .length-option:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 10;
+      }
+      .char-count {
         font-size: 12px;
         color: #666;
-        margin-top: 5px;
+        margin-left: 8px;
+        white-space: nowrap;
       }
-      .character-count.warning {
-        color: #ff9800;
+      .response-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
-      .character-count.error {
-        color: #f44336;
-      }
-      .platform-icon {
-        width: 16px;
-        height: 16px;
-        margin-right: 5px;
-      }
-      .progress-bar {
-        height: 4px;
-        background: #eee;
-        border-radius: 2px;
-        margin-top: 5px;
-        overflow: hidden;
-      }
-      .progress-bar-fill {
-        height: 100%;
-        background: #4caf50;
-        transition: width 0.3s ease;
-      }
-      .progress-bar-fill.warning {
-        background: #ff9800;
-      }
+      /* Remove character count and progress bar styles */
+      .character-count,
+      .character-count.warning,
+      .character-count.error,
+      .platform-icon,
+      .progress-bar,
+      .progress-bar-fill,
+      .progress-bar-fill.warning,
       .progress-bar-fill.error {
-        background: #f44336;
+        display: none;
       }
     </style>
   </head>
@@ -589,29 +590,17 @@
       </div>
 
       <div class="length-selector">
-        <div class="length-option" data-length="brief">
-          <div>Brief</div>
-          <small>2-3 sentences</small>
+        <div class="length-option" data-length="brief" data-tooltip="Brief (2-3 sentences)">S</div>
+        <div
+          class="length-option selected"
+          data-length="standard"
+          data-tooltip="Standard (3-4 sentences)"
+        >
+          M
         </div>
-        <div class="length-option selected" data-length="standard">
-          <div>Standard</div>
-          <small>3-4 sentences</small>
+        <div class="length-option" data-length="detailed" data-tooltip="Detailed (4-5 sentences)">
+          L
         </div>
-        <div class="length-option" data-length="detailed">
-          <div>Detailed</div>
-          <small>4-5 sentences</small>
-        </div>
-      </div>
-
-      <div class="character-count">
-        <span class="platform-info">
-          <img src="" alt="" class="platform-icon" id="platformIcon" />
-          <span id="platformName"></span>
-        </span>
-        <span>Characters: <span id="currentCount">0</span> / <span id="maxCount">280</span></span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-bar-fill" id="progressBar"></div>
       </div>
 
       <div class="format-selector">
@@ -635,7 +624,10 @@
         <div class="response-header">
           <label class="label" for="response">Generated Response:</label>
           <span class="current-model" id="currentModel"></span>
-          <span class="copy-icon tooltip" id="copyIcon" data-tooltip="Copy to Clipboard">📋</span>
+          <div class="response-actions">
+            <span class="char-count" id="charCount">0 chars</span>
+            <span class="copy-icon tooltip" id="copyIcon" data-tooltip="Copy to Clipboard">📋</span>
+          </div>
         </div>
         <textarea
           id="response"
